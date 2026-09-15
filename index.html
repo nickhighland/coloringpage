@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coloring Page Maker (Pro)</title>
+    <title>Coloring Page Maker</title>
     <style>
         /* --- RESET & VARIABLES --- */
         :root {
@@ -18,8 +18,20 @@
             --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding-bottom: 40px; }
-        
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", "Hiragino Sans", "PingFang SC", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding-bottom: 40px; }
+
+        /* --- TOP BAR --- */
+        .topbar {
+            max-width: 1200px; margin: 0 auto; padding: 12px 20px 0;
+            display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+        }
+        .brand { font-weight: 700; font-size: 1rem; }
+        .lang-picker { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-light); }
+        .lang-picker select {
+            font: inherit; color: var(--text); background: var(--panel);
+            border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; cursor: pointer;
+        }
+
         /* --- LAYOUT GRID --- */
         .app-container {
             max-width: 1200px;
@@ -28,6 +40,8 @@
             display: grid;
             gap: 24px;
         }
+        .upload-screen { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+        .upload-inner { width: 100%; max-width: 600px; }
 
         /* Mobile Layout */
         .section-preview { order: 1; }
@@ -36,11 +50,11 @@
 
         /* Desktop Layout */
         @media (min-width: 1024px) {
-            .app-container {
+            #app-screen {
                 grid-template-columns: 320px 1fr;
                 align-items: start;
             }
-            .section-controls { grid-column: 1; grid-row: 1; order: unset; }
+            .section-controls { grid-column: 1; grid-row: 1 / span 2; order: unset; }
             .section-preview { grid-column: 2; grid-row: 1; order: unset; }
             .section-pdf { grid-column: 2; grid-row: 2; order: unset; }
         }
@@ -49,9 +63,9 @@
         .card { background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
         .card-header { padding: 16px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; align-items: center; gap: 8px; background: #fdfdfd; }
         .card-body { padding: 20px; }
-        
+
         h1 { text-align: center; margin-bottom: 20px; font-size: 1.5rem; color: var(--text); }
-        
+
         /* Upload Area */
         .upload-area {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -60,21 +74,27 @@
             background: var(--panel); text-align: center;
             min-height: 300px;
         }
-        .upload-area:hover { border-color: var(--primary); background: #eff6ff; }
-        
+        .upload-area:hover, .upload-area.dragover { border-color: var(--primary); background: #eff6ff; }
+        .upload-title { font-weight: 600; font-size: 1.1rem; }
+        .upload-hint { color: var(--text-light); font-size: 0.9rem; }
+
         /* Controls */
         .control-group { margin-bottom: 20px; }
         .control-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; font-weight: 500; }
         .control-value { color: var(--text-light); }
         .control-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
-        
+
         /* Sliders */
         input[type=range] {
-            width: 100%; height: 6px; background: #e2e8f0; border-radius: 4px; outline: none; -webkit-appearance: none;
+            width: 100%; height: 6px; background: #e2e8f0; border-radius: 4px; outline: none; -webkit-appearance: none; appearance: none;
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; width: 20px; height: 20px; background: var(--primary); border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
+        input[type=range]::-moz-range-thumb {
+            width: 20px; height: 20px; background: var(--primary); border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]:focus-visible { box-shadow: 0 0 0 3px #bfdbfe; }
 
         /* Image Preview */
         .preview-container {
@@ -83,34 +103,40 @@
             display: flex; align-items: center; justify-content: center; padding: 20px;
         }
         img#result-image { max-width: 100%; max-height: 70vh; object-fit: contain; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: white; }
-        
+        img#result-image:not([src]) { visibility: hidden; }
+
         /* LOGO OVERLAY (Screen Only) */
         .logo-overlay {
             position: absolute;
             bottom: 20px;
             right: 20px;
-            width: 96px; 
+            width: 96px;
             height: 96px;
             object-fit: contain;
-            pointer-events: none; 
+            pointer-events: none;
             z-index: 10;
         }
 
         /* PDF Options */
+        .option-label { font-size: 0.9rem; font-weight: 500; margin-bottom: 8px; }
+        fieldset { border: none; }
         .radio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .radio-grid.two { grid-template-columns: repeat(2, 1fr); }
         .radio-option {
             border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; text-align: center; transition: 0.2s;
-            display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.85rem;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem;
         }
+        .radio-option input { position: absolute; opacity: 0; pointer-events: none; }
         .radio-option:hover { background: #f1f5f9; }
-        .radio-option.selected { border-color: var(--primary); background: #eff6ff; color: var(--primary); font-weight: 600; }
+        .radio-option:has(input:checked) { border-color: var(--primary); background: #eff6ff; color: var(--primary); font-weight: 600; }
+        .radio-option:has(input:focus-visible) { box-shadow: 0 0 0 3px #bfdbfe; }
         .radio-icon { width: 24px; height: 32px; border: 2px solid currentColor; border-radius: 2px; margin-bottom: 4px; opacity: 0.6; }
         .radio-icon.landscape { width: 32px; height: 24px; }
-        .radio-icon.auto { border: none; font-size: 24px; opacity: 1; }
+        .radio-icon.auto { border: none; font-size: 24px; line-height: 32px; opacity: 1; }
 
         /* Buttons */
         .btn {
-            width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s;
+            width: 100%; padding: 14px; border: none; border-radius: 10px; font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .btn-primary { background: var(--primary); color: white; }
@@ -119,6 +145,7 @@
         .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
         .btn-danger { background: #ef4444; color: white; }
         .btn-danger:hover { background: #dc2626; }
+        .btn:disabled { opacity: 0.6; cursor: wait; }
 
         .hidden { display: none !important; }
         .loading-overlay {
@@ -129,202 +156,761 @@
         .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Print Override */
+        /* Print: only the coloring page itself */
         @media print {
-            .app-container > * { display: none; }
-            body { background: white; }
-            .print-only { display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; }
-            .print-only img { width: 100%; height: 100%; object-fit: contain; }
+            @page { margin: 0.5in; }
+            body { background: white; padding: 0; }
+            .topbar, #upload-screen, .section-controls, .section-pdf, .logo-overlay, .loading-overlay { display: none !important; }
+            #app-screen { display: block; padding: 0; }
+            .card { border: none; box-shadow: none; }
+            .preview-container { background: none; padding: 0; min-height: 0; max-height: none; }
+            img#result-image { max-width: 100%; max-height: 100vh; box-shadow: none; }
         }
     </style>
 </head>
 <body>
 
-    <div id="upload-screen" class="app-container" style="display: block; min-height: 80vh; display: flex; align-items: center; justify-content: center;">
-        <div style="width: 100%; max-width: 600px;">
-            <h1>Turn Photos into Coloring Pages</h1>
-            <div class="upload-area" onclick="document.getElementById('file-input').click()">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <div>
-                    <div style="font-weight: 600; font-size: 1.1rem;">Tap to Upload Photo</div>
-                    <div style="color: var(--text-light); font-size: 0.9rem;">JPG or PNG supported</div>
-                </div>
-            </div>
-            <div style="margin-top: 16px; text-align: center;">
-                <button class="btn btn-outline" onclick="document.getElementById('camera-input').click()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    Or take a photo
-                </button>
-            </div>
-        </div>
-    </div>
+    <header class="topbar">
+        <div class="brand" data-i18n="title">Coloring Page Maker</div>
+        <label class="lang-picker">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span data-i18n="language">Language</span>
+            <select id="lang-select"></select>
+        </label>
+    </header>
 
-    <div id="app-screen" class="app-container hidden">
-        
-        <div class="section-controls card">
-            <div class="card-header">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-                Settings
-            </div>
-            <div class="card-body">
-                <div class="control-group">
-                    <div class="control-header">
-                        <label>Detail Level</label>
-                        <span id="val-detail" class="control-value">Medium</span>
+    <main>
+        <div id="upload-screen" class="app-container upload-screen">
+            <div class="upload-inner">
+                <h1 data-i18n="heading">Turn Photos into Coloring Pages</h1>
+                <label for="file-input" class="upload-area" id="drop-zone">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <div>
+                        <div class="upload-title" data-i18n="uploadTap">Tap to Upload Photo</div>
+                        <div class="upload-hint" data-i18n="uploadHint">or drag it here · JPG, PNG or WebP</div>
                     </div>
-                    <input type="range" id="in-detail" min="0" max="100" value="50">
-                    <div class="control-labels"><span>Simple</span><span>Complex</span></div>
+                </label>
+                <div style="margin-top: 16px;">
+                    <label for="camera-input" class="btn btn-outline">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span data-i18n="takePhoto">Or take a photo</span>
+                    </label>
                 </div>
-
-                <div class="control-group">
-                    <div class="control-header">
-                        <label>Line Thickness</label>
-                        <span id="val-thick" class="control-value">Pen</span>
-                    </div>
-                    <input type="range" id="in-thick" min="0" max="5" value="0">
-                    <div class="control-labels"><span>Fine</span><span>Marker</span></div>
-                </div>
-
-                <div class="control-group">
-                    <div class="control-header">
-                        <label>Smoothness</label>
-                        <span id="val-blur" class="control-value">2</span>
-                    </div>
-                    <input type="range" id="in-blur" min="0" max="10" value="2">
-                </div>
-
-                <button class="btn btn-outline" onclick="resetApp()" style="margin-top: 24px;">Start Over</button>
             </div>
         </div>
 
-        <div class="section-preview card">
-            <div class="preview-container">
-                <div id="loading" class="loading-overlay hidden">
-                    <div class="spinner"></div>
-                    <div>Processing...</div>
-                </div>
-                <img id="result-image" alt="Preview">
-                <img id="overlay-logo" src="logo.png" class="logo-overlay hidden" alt="Logo">
-            </div>
-        </div>
+        <div id="app-screen" class="app-container hidden">
 
-        <div class="section-pdf card">
-            <div class="card-header">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                PDF Options
-            </div>
-            <div class="card-body">
-                <div class="radio-grid">
-                    <div class="radio-option selected" onclick="setOrientation('auto', this)">
-                        <div class="radio-icon auto">✨</div>
-                        Auto
-                    </div>
-                    <div class="radio-option" onclick="setOrientation('portrait', this)">
-                        <div class="radio-icon portrait"></div>
-                        Portrait
-                    </div>
-                    <div class="radio-option" onclick="setOrientation('landscape', this)">
-                        <div class="radio-icon landscape"></div>
-                        Landscape
-                    </div>
+            <div class="section-controls card">
+                <div class="card-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                    <span data-i18n="settings">Settings</span>
                 </div>
-                <button class="btn btn-danger" onclick="downloadPDF()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download PDF
-                </button>
-            </div>
-        </div>
+                <div class="card-body">
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="in-detail" data-i18n="detail">Detail Level</label>
+                            <span id="val-detail" class="control-value"></span>
+                        </div>
+                        <input type="range" id="in-detail" min="0" max="100" value="50">
+                        <div class="control-labels"><span data-i18n="simple">Simple</span><span data-i18n="complex">Complex</span></div>
+                    </div>
 
-    </div>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="in-thick" data-i18n="thickness">Line Thickness</label>
+                            <span id="val-thick" class="control-value"></span>
+                        </div>
+                        <input type="range" id="in-thick" min="0" max="5" value="0">
+                        <div class="control-labels"><span data-i18n="fine">Fine</span><span data-i18n="marker">Marker</span></div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="in-blur" data-i18n="smoothness">Smoothness</label>
+                            <span id="val-blur" class="control-value"></span>
+                        </div>
+                        <input type="range" id="in-blur" min="0" max="10" value="2">
+                    </div>
+
+                    <button type="button" class="btn btn-outline" id="btn-reset" style="margin-top: 24px;" data-i18n="startOver">Start Over</button>
+                </div>
+            </div>
+
+            <div class="section-preview card">
+                <div class="preview-container">
+                    <div id="loading" class="loading-overlay hidden" role="status">
+                        <div class="spinner"></div>
+                        <div data-i18n="processing">Processing…</div>
+                    </div>
+                    <img id="result-image" data-i18n-alt="previewAlt" alt="Coloring page preview">
+                    <img id="overlay-logo" class="logo-overlay hidden" alt="">
+                </div>
+            </div>
+
+            <div class="section-pdf card">
+                <div class="card-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                    <span data-i18n="pdfOptions">PDF Options</span>
+                </div>
+                <div class="card-body">
+                    <fieldset>
+                        <legend class="option-label" data-i18n="orientation">Orientation</legend>
+                        <div class="radio-grid">
+                            <label class="radio-option">
+                                <input type="radio" name="orientation" value="auto" checked>
+                                <div class="radio-icon auto" aria-hidden="true">✨</div>
+                                <span data-i18n="auto">Auto</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="orientation" value="portrait">
+                                <div class="radio-icon portrait" aria-hidden="true"></div>
+                                <span data-i18n="portrait">Portrait</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="orientation" value="landscape">
+                                <div class="radio-icon landscape" aria-hidden="true"></div>
+                                <span data-i18n="landscape">Landscape</span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend class="option-label" data-i18n="paper">Paper Size</legend>
+                        <div class="radio-grid two">
+                            <label class="radio-option">
+                                <input type="radio" name="paper" value="letter">
+                                <span data-i18n="letter">Letter</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="paper" value="a4">
+                                <span data-i18n="a4">A4</span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-danger" id="btn-pdf">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span data-i18n="download">Download PDF</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
 
     <input type="file" id="file-input" class="hidden" accept="image/*">
     <input type="file" id="camera-input" class="hidden" accept="image/*" capture="environment">
     <canvas id="proc-canvas" class="hidden"></canvas>
 
     <script>
-        // --- APP STATE ---
-        const state = {
-            src: null,
-            logoImg: null, 
-            params: { detail: 50, thick: 0, blur: 2 },
-            orientation: 'auto',
-            isProcessing: false
-        };
-
-        // --- DOM ELEMENTS ---
-        const els = {
-            upload: document.getElementById('upload-screen'),
-            app: document.getElementById('app-screen'),
-            fileIn: document.getElementById('file-input'),
-            camIn: document.getElementById('camera-input'),
-            canvas: document.getElementById('proc-canvas'),
-            img: document.getElementById('result-image'),
-            overlayLogo: document.getElementById('overlay-logo'),
-            loading: document.getElementById('loading'),
-            inputs: {
-                detail: document.getElementById('in-detail'),
-                thick: document.getElementById('in-thick'),
-                blur: document.getElementById('in-blur')
+        // --- TRANSLATIONS ---
+        // To add a language: copy the `en` block, translate the values, and add it here.
+        // Missing keys fall back to English. `{n}` is replaced with a number.
+        const I18N = {
+            en: {
+                _name: 'English',
+                title: 'Coloring Page Maker',
+                heading: 'Turn Photos into Coloring Pages',
+                uploadTap: 'Tap to Upload Photo',
+                uploadHint: 'or drag it here · JPG, PNG or WebP',
+                takePhoto: 'Or take a photo',
+                language: 'Language',
+                settings: 'Settings',
+                detail: 'Detail Level',
+                simple: 'Simple',
+                complex: 'Complex',
+                thickness: 'Line Thickness',
+                fine: 'Fine',
+                marker: 'Marker',
+                level: 'Level {n}',
+                smoothness: 'Smoothness',
+                startOver: 'Start Over',
+                processing: 'Processing…',
+                previewAlt: 'Coloring page preview',
+                pdfOptions: 'PDF Options',
+                orientation: 'Orientation',
+                auto: 'Auto',
+                portrait: 'Portrait',
+                landscape: 'Landscape',
+                paper: 'Paper Size',
+                letter: 'Letter',
+                a4: 'A4',
+                download: 'Download PDF',
+                fileName: 'coloring-page',
+                errImage: "That file couldn't be opened as an image.",
+                errProcess: 'Something went wrong while processing the image.',
+                errPdf: 'Something went wrong while creating the PDF.',
+                logoNotice: "The logo can't be included when the page is opened as a local file. The PDF will be created without it."
             },
-            labels: {
-                detail: document.getElementById('val-detail'),
-                thick: document.getElementById('val-thick'),
-                blur: document.getElementById('val-blur')
+            es: {
+                _name: 'Español',
+                title: 'Creador de dibujos para colorear',
+                heading: 'Convierte fotos en dibujos para colorear',
+                uploadTap: 'Toca para subir una foto',
+                uploadHint: 'o arrástrala aquí · JPG, PNG o WebP',
+                takePhoto: 'O haz una foto',
+                language: 'Idioma',
+                settings: 'Ajustes',
+                detail: 'Nivel de detalle',
+                simple: 'Sencillo',
+                complex: 'Complejo',
+                thickness: 'Grosor de línea',
+                fine: 'Fino',
+                marker: 'Rotulador',
+                level: 'Nivel {n}',
+                smoothness: 'Suavizado',
+                startOver: 'Empezar de nuevo',
+                processing: 'Procesando…',
+                previewAlt: 'Vista previa del dibujo para colorear',
+                pdfOptions: 'Opciones de PDF',
+                orientation: 'Orientación',
+                auto: 'Automática',
+                portrait: 'Vertical',
+                landscape: 'Horizontal',
+                paper: 'Tamaño de papel',
+                letter: 'Carta',
+                a4: 'A4',
+                download: 'Descargar PDF',
+                fileName: 'dibujo-para-colorear',
+                errImage: 'No se pudo abrir el archivo como imagen.',
+                errProcess: 'Se produjo un error al procesar la imagen.',
+                errPdf: 'Se produjo un error al crear el PDF.',
+                logoNotice: 'No se puede incluir el logotipo cuando la página se abre como archivo local. El PDF se creará sin él.'
+            },
+            fr: {
+                _name: 'Français',
+                title: 'Créateur de coloriages',
+                heading: 'Transformez vos photos en coloriages',
+                uploadTap: 'Touchez pour importer une photo',
+                uploadHint: 'ou glissez-la ici · JPG, PNG ou WebP',
+                takePhoto: 'Ou prenez une photo',
+                language: 'Langue',
+                settings: 'Réglages',
+                detail: 'Niveau de détail',
+                simple: 'Simple',
+                complex: 'Complexe',
+                thickness: 'Épaisseur du trait',
+                fine: 'Fin',
+                marker: 'Feutre',
+                level: 'Niveau {n}',
+                smoothness: 'Lissage',
+                startOver: 'Recommencer',
+                processing: 'Traitement…',
+                previewAlt: 'Aperçu du coloriage',
+                pdfOptions: 'Options PDF',
+                orientation: 'Orientation',
+                auto: 'Auto',
+                portrait: 'Portrait',
+                landscape: 'Paysage',
+                paper: 'Format du papier',
+                letter: 'Lettre US',
+                a4: 'A4',
+                download: 'Télécharger le PDF',
+                fileName: 'coloriage',
+                errImage: "Impossible d'ouvrir ce fichier en tant qu'image.",
+                errProcess: "Une erreur s'est produite lors du traitement de l'image.",
+                errPdf: "Une erreur s'est produite lors de la création du PDF.",
+                logoNotice: "Le logo ne peut pas être inclus lorsque la page est ouverte en tant que fichier local. Le PDF sera créé sans logo."
+            },
+            de: {
+                _name: 'Deutsch',
+                title: 'Malvorlagen-Generator',
+                heading: 'Verwandle Fotos in Malvorlagen',
+                uploadTap: 'Tippen, um ein Foto hochzuladen',
+                uploadHint: 'oder hierher ziehen · JPG, PNG oder WebP',
+                takePhoto: 'Oder ein Foto aufnehmen',
+                language: 'Sprache',
+                settings: 'Einstellungen',
+                detail: 'Detailgrad',
+                simple: 'Einfach',
+                complex: 'Komplex',
+                thickness: 'Linienstärke',
+                fine: 'Fein',
+                marker: 'Filzstift',
+                level: 'Stufe {n}',
+                smoothness: 'Glättung',
+                startOver: 'Neu beginnen',
+                processing: 'Wird verarbeitet…',
+                previewAlt: 'Vorschau der Malvorlage',
+                pdfOptions: 'PDF-Optionen',
+                orientation: 'Ausrichtung',
+                auto: 'Automatisch',
+                portrait: 'Hochformat',
+                landscape: 'Querformat',
+                paper: 'Papierformat',
+                letter: 'US Letter',
+                a4: 'A4',
+                download: 'PDF herunterladen',
+                fileName: 'malvorlage',
+                errImage: 'Diese Datei konnte nicht als Bild geöffnet werden.',
+                errProcess: 'Beim Verarbeiten des Bildes ist ein Fehler aufgetreten.',
+                errPdf: 'Beim Erstellen der PDF ist ein Fehler aufgetreten.',
+                logoNotice: 'Das Logo kann nicht eingefügt werden, wenn die Seite als lokale Datei geöffnet ist. Die PDF wird ohne Logo erstellt.'
+            },
+            it: {
+                _name: 'Italiano',
+                title: 'Crea disegni da colorare',
+                heading: 'Trasforma le foto in disegni da colorare',
+                uploadTap: 'Tocca per caricare una foto',
+                uploadHint: 'o trascinala qui · JPG, PNG o WebP',
+                takePhoto: 'Oppure scatta una foto',
+                language: 'Lingua',
+                settings: 'Impostazioni',
+                detail: 'Livello di dettaglio',
+                simple: 'Semplice',
+                complex: 'Complesso',
+                thickness: 'Spessore della linea',
+                fine: 'Sottile',
+                marker: 'Pennarello',
+                level: 'Livello {n}',
+                smoothness: 'Morbidezza',
+                startOver: 'Ricomincia',
+                processing: 'Elaborazione…',
+                previewAlt: 'Anteprima del disegno da colorare',
+                pdfOptions: 'Opzioni PDF',
+                orientation: 'Orientamento',
+                auto: 'Automatico',
+                portrait: 'Verticale',
+                landscape: 'Orizzontale',
+                paper: 'Formato carta',
+                letter: 'Letter (USA)',
+                a4: 'A4',
+                download: 'Scarica PDF',
+                fileName: 'disegno-da-colorare',
+                errImage: 'Impossibile aprire il file come immagine.',
+                errProcess: "Si è verificato un errore durante l'elaborazione dell'immagine.",
+                errPdf: 'Si è verificato un errore durante la creazione del PDF.',
+                logoNotice: 'Impossibile includere il logo quando la pagina è aperta come file locale. Il PDF verrà creato senza logo.'
+            },
+            pt: {
+                _name: 'Português',
+                title: 'Criador de desenhos para colorir',
+                heading: 'Transforme fotos em desenhos para colorir',
+                uploadTap: 'Toque para enviar uma foto',
+                uploadHint: 'ou arraste-a para cá · JPG, PNG ou WebP',
+                takePhoto: 'Ou tire uma foto',
+                language: 'Idioma',
+                settings: 'Configurações',
+                detail: 'Nível de detalhe',
+                simple: 'Simples',
+                complex: 'Complexo',
+                thickness: 'Espessura da linha',
+                fine: 'Fina',
+                marker: 'Marcador',
+                level: 'Nível {n}',
+                smoothness: 'Suavização',
+                startOver: 'Recomeçar',
+                processing: 'Processando…',
+                previewAlt: 'Pré-visualização do desenho para colorir',
+                pdfOptions: 'Opções de PDF',
+                orientation: 'Orientação',
+                auto: 'Automática',
+                portrait: 'Retrato',
+                landscape: 'Paisagem',
+                paper: 'Tamanho do papel',
+                letter: 'Carta',
+                a4: 'A4',
+                download: 'Baixar PDF',
+                fileName: 'desenho-para-colorir',
+                errImage: 'Não foi possível abrir este arquivo como imagem.',
+                errProcess: 'Ocorreu um erro ao processar a imagem.',
+                errPdf: 'Ocorreu um erro ao criar o PDF.',
+                logoNotice: 'Não é possível incluir o logotipo quando a página é aberta como arquivo local. O PDF será criado sem ele.'
+            },
+            nl: {
+                _name: 'Nederlands',
+                title: 'Kleurplaatmaker',
+                heading: "Maak kleurplaten van je foto's",
+                uploadTap: 'Tik om een foto te uploaden',
+                uploadHint: 'of sleep hem hierheen · JPG, PNG of WebP',
+                takePhoto: 'Of maak een foto',
+                language: 'Taal',
+                settings: 'Instellingen',
+                detail: 'Detailniveau',
+                simple: 'Eenvoudig',
+                complex: 'Complex',
+                thickness: 'Lijndikte',
+                fine: 'Fijn',
+                marker: 'Stift',
+                level: 'Niveau {n}',
+                smoothness: 'Gladheid',
+                startOver: 'Opnieuw beginnen',
+                processing: 'Bezig met verwerken…',
+                previewAlt: 'Voorbeeld van de kleurplaat',
+                pdfOptions: 'PDF-opties',
+                orientation: 'Afdrukstand',
+                auto: 'Automatisch',
+                portrait: 'Staand',
+                landscape: 'Liggend',
+                paper: 'Papierformaat',
+                letter: 'Letter (VS)',
+                a4: 'A4',
+                download: 'PDF downloaden',
+                fileName: 'kleurplaat',
+                errImage: 'Dit bestand kan niet als afbeelding worden geopend.',
+                errProcess: 'Er is een fout opgetreden bij het verwerken van de afbeelding.',
+                errPdf: 'Er is een fout opgetreden bij het maken van de PDF.',
+                logoNotice: 'Het logo kan niet worden toegevoegd als de pagina als lokaal bestand is geopend. De PDF wordt zonder logo gemaakt.'
+            },
+            pl: {
+                _name: 'Polski',
+                title: 'Kreator kolorowanek',
+                heading: 'Zamień zdjęcia w kolorowanki',
+                uploadTap: 'Dotknij, aby przesłać zdjęcie',
+                uploadHint: 'lub przeciągnij je tutaj · JPG, PNG lub WebP',
+                takePhoto: 'Lub zrób zdjęcie',
+                language: 'Język',
+                settings: 'Ustawienia',
+                detail: 'Poziom szczegółów',
+                simple: 'Prosty',
+                complex: 'Złożony',
+                thickness: 'Grubość linii',
+                fine: 'Cienka',
+                marker: 'Flamaster',
+                level: 'Poziom {n}',
+                smoothness: 'Wygładzanie',
+                startOver: 'Zacznij od nowa',
+                processing: 'Przetwarzanie…',
+                previewAlt: 'Podgląd kolorowanki',
+                pdfOptions: 'Opcje PDF',
+                orientation: 'Orientacja',
+                auto: 'Automatyczna',
+                portrait: 'Pionowa',
+                landscape: 'Pozioma',
+                paper: 'Rozmiar papieru',
+                letter: 'Letter (USA)',
+                a4: 'A4',
+                download: 'Pobierz PDF',
+                fileName: 'kolorowanka',
+                errImage: 'Nie można otworzyć tego pliku jako obrazu.',
+                errProcess: 'Wystąpił błąd podczas przetwarzania obrazu.',
+                errPdf: 'Wystąpił błąd podczas tworzenia pliku PDF.',
+                logoNotice: 'Nie można dodać logo, gdy strona jest otwarta jako plik lokalny. PDF zostanie utworzony bez logo.'
+            },
+            ru: {
+                _name: 'Русский',
+                title: 'Создание раскрасок',
+                heading: 'Превратите фото в раскраски',
+                uploadTap: 'Нажмите, чтобы загрузить фото',
+                uploadHint: 'или перетащите его сюда · JPG, PNG или WebP',
+                takePhoto: 'Или сделайте снимок',
+                language: 'Язык',
+                settings: 'Настройки',
+                detail: 'Детализация',
+                simple: 'Простая',
+                complex: 'Сложная',
+                thickness: 'Толщина линий',
+                fine: 'Тонкие',
+                marker: 'Маркер',
+                level: 'Уровень {n}',
+                smoothness: 'Сглаживание',
+                startOver: 'Начать заново',
+                processing: 'Обработка…',
+                previewAlt: 'Предпросмотр раскраски',
+                pdfOptions: 'Параметры PDF',
+                orientation: 'Ориентация',
+                auto: 'Авто',
+                portrait: 'Книжная',
+                landscape: 'Альбомная',
+                paper: 'Размер бумаги',
+                letter: 'Letter (США)',
+                a4: 'A4',
+                download: 'Скачать PDF',
+                fileName: 'raskraska',
+                errImage: 'Не удалось открыть этот файл как изображение.',
+                errProcess: 'При обработке изображения произошла ошибка.',
+                errPdf: 'При создании PDF произошла ошибка.',
+                logoNotice: 'Логотип нельзя добавить, если страница открыта как локальный файл. PDF будет создан без логотипа.'
+            },
+            ja: {
+                _name: '日本語',
+                title: 'ぬりえメーカー',
+                heading: '写真をぬりえに変換',
+                uploadTap: 'タップして写真をアップロード',
+                uploadHint: 'またはここにドラッグ · JPG・PNG・WebP',
+                takePhoto: 'または写真を撮る',
+                language: '言語',
+                settings: '設定',
+                detail: '細かさ',
+                simple: 'シンプル',
+                complex: '精細',
+                thickness: '線の太さ',
+                fine: '細い',
+                marker: 'マーカー',
+                level: 'レベル {n}',
+                smoothness: 'なめらかさ',
+                startOver: '最初からやり直す',
+                processing: '処理中…',
+                previewAlt: 'ぬりえのプレビュー',
+                pdfOptions: 'PDF オプション',
+                orientation: '向き',
+                auto: '自動',
+                portrait: '縦',
+                landscape: '横',
+                paper: '用紙サイズ',
+                letter: 'レター',
+                a4: 'A4',
+                download: 'PDF をダウンロード',
+                fileName: 'nurie',
+                errImage: 'このファイルを画像として開けませんでした。',
+                errProcess: '画像の処理中にエラーが発生しました。',
+                errPdf: 'PDF の作成中にエラーが発生しました。',
+                logoNotice: 'ページをローカルファイルとして開いている場合はロゴを含められません。ロゴなしで PDF を作成します。'
+            },
+            ko: {
+                _name: '한국어',
+                title: '색칠 공부 도안 만들기',
+                heading: '사진을 색칠 공부 도안으로 바꿔 보세요',
+                uploadTap: '탭하여 사진 업로드',
+                uploadHint: '또는 여기로 끌어다 놓기 · JPG, PNG, WebP',
+                takePhoto: '또는 사진 촬영',
+                language: '언어',
+                settings: '설정',
+                detail: '디테일 수준',
+                simple: '단순',
+                complex: '복잡',
+                thickness: '선 굵기',
+                fine: '가늘게',
+                marker: '마커',
+                level: '레벨 {n}',
+                smoothness: '부드러움',
+                startOver: '처음부터 다시',
+                processing: '처리 중…',
+                previewAlt: '색칠 공부 도안 미리보기',
+                pdfOptions: 'PDF 옵션',
+                orientation: '방향',
+                auto: '자동',
+                portrait: '세로',
+                landscape: '가로',
+                paper: '용지 크기',
+                letter: '레터',
+                a4: 'A4',
+                download: 'PDF 다운로드',
+                fileName: 'coloring-page',
+                errImage: '이 파일을 이미지로 열 수 없습니다.',
+                errProcess: '이미지를 처리하는 중 오류가 발생했습니다.',
+                errPdf: 'PDF를 만드는 중 오류가 발생했습니다.',
+                logoNotice: '페이지를 로컬 파일로 열면 로고를 넣을 수 없습니다. 로고 없이 PDF를 만듭니다.'
+            },
+            zh: {
+                _name: '简体中文',
+                title: '涂色画生成器',
+                heading: '把照片变成涂色画',
+                uploadTap: '点按上传照片',
+                uploadHint: '或拖放到此处 · 支持 JPG、PNG、WebP',
+                takePhoto: '或拍一张照片',
+                language: '语言',
+                settings: '设置',
+                detail: '细节程度',
+                simple: '简单',
+                complex: '复杂',
+                thickness: '线条粗细',
+                fine: '细',
+                marker: '马克笔',
+                level: '等级 {n}',
+                smoothness: '平滑度',
+                startOver: '重新开始',
+                processing: '正在处理…',
+                previewAlt: '涂色画预览',
+                pdfOptions: 'PDF 选项',
+                orientation: '方向',
+                auto: '自动',
+                portrait: '纵向',
+                landscape: '横向',
+                paper: '纸张大小',
+                letter: 'Letter',
+                a4: 'A4',
+                download: '下载 PDF',
+                fileName: 'coloring-page',
+                errImage: '无法将此文件作为图片打开。',
+                errProcess: '处理图片时出错。',
+                errPdf: '生成 PDF 时出错。',
+                logoNotice: '以本地文件方式打开页面时无法添加徽标，将生成不含徽标的 PDF。'
             }
         };
 
+        // Regions that use US Letter paper; everywhere else defaults to A4.
+        const LETTER_REGIONS = ['US', 'CA', 'MX', 'PH', 'CL', 'CO', 'VE', 'PR', 'GT', 'CR', 'PA', 'DO', 'SV', 'NI', 'HN'];
+
+        // Page sizes in PDF points (1/72 inch).
+        const PAPER = { letter: [612, 792], a4: [595.28, 841.89] };
+
+        // --- PERSISTENCE (best effort; storage may be blocked) ---
+        const store = {
+            get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+            set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+        };
+
+        function browserLocales() {
+            return (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'en'];
+        }
+
+        function detectLang() {
+            const fromUrl = new URLSearchParams(location.search).get('lang');
+            for (const c of [fromUrl, store.get('lang'), ...browserLocales()]) {
+                if (!c) continue;
+                const code = c.toLowerCase().split(/[-_]/)[0];
+                if (I18N[code]) return code;
+            }
+            return 'en';
+        }
+
+        function detectPaper() {
+            const saved = store.get('paper');
+            if (PAPER[saved]) return saved;
+            for (const l of browserLocales()) {
+                try {
+                    const region = new Intl.Locale(l).maximize().region;
+                    if (region) return LETTER_REGIONS.includes(region) ? 'letter' : 'a4';
+                } catch {}
+            }
+            return 'letter';
+        }
+
+        // --- APP STATE ---
+        const state = {
+            src: null,
+            logoImg: null,
+            params: { detail: 50, thick: 0, blur: 2 },
+            orientation: 'auto',
+            paper: detectPaper(),
+            lang: detectLang(),
+            previewUrl: null
+        };
+
+        function t(key, vars) {
+            let s = (I18N[state.lang] && I18N[state.lang][key]) ?? I18N.en[key] ?? key;
+            if (vars) for (const k in vars) s = s.replace(`{${k}}`, vars[k]);
+            return s;
+        }
+
+        // --- DOM ELEMENTS ---
+        const $ = (id) => document.getElementById(id);
+        const els = {
+            upload: $('upload-screen'),
+            app: $('app-screen'),
+            dropZone: $('drop-zone'),
+            fileIn: $('file-input'),
+            camIn: $('camera-input'),
+            canvas: $('proc-canvas'),
+            img: $('result-image'),
+            overlayLogo: $('overlay-logo'),
+            loading: $('loading'),
+            langSelect: $('lang-select'),
+            pdfBtn: $('btn-pdf'),
+            inputs: { detail: $('in-detail'), thick: $('in-thick'), blur: $('in-blur') },
+            labels: { detail: $('val-detail'), thick: $('val-thick'), blur: $('val-blur') }
+        };
+
+        // --- LOCALIZATION ---
+        function applyLanguage() {
+            document.documentElement.lang = state.lang;
+            document.title = t('title');
+            document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+            document.querySelectorAll('[data-i18n-alt]').forEach(el => { el.alt = t(el.dataset.i18nAlt); });
+            els.langSelect.value = state.lang;
+            updateLabels();
+        }
+
+        Object.keys(I18N).forEach(code => {
+            els.langSelect.add(new Option(I18N[code]._name, code));
+        });
+        els.langSelect.onchange = () => {
+            state.lang = els.langSelect.value;
+            store.set('lang', state.lang);
+            applyLanguage();
+        };
+
+        function updateLabels() {
+            const pct = new Intl.NumberFormat(state.lang, { style: 'percent' });
+            const num = new Intl.NumberFormat(state.lang);
+            els.labels.detail.textContent = pct.format(state.params.detail / 100);
+            els.labels.blur.textContent = num.format(state.params.blur);
+            els.labels.thick.textContent = state.params.thick === 0 ? t('fine') : t('level', { n: num.format(state.params.thick) });
+        }
+
         // --- INITIALIZATION ---
-        
-        // Preload Logo with Error Handling
+
+        // Optional logo: shown on the preview and stamped on the PDF if logo.png exists next to this page.
         const logo = new Image();
-        logo.crossOrigin = "Anonymous"; // Attempt to handle CORS if applicable
+        logo.onload = () => {
+            state.logoImg = logo;
+            els.overlayLogo.src = logo.src;
+            if (state.src) els.overlayLogo.classList.remove('hidden');
+        };
         logo.src = 'logo.png';
-        logo.onload = () => { state.logoImg = logo; };
-        // If it fails (e.g., file not found), we just proceed without it
 
         els.fileIn.onchange = handleFile;
         els.camIn.onchange = handleFile;
+        $('btn-reset').onclick = resetApp;
+        els.pdfBtn.onclick = downloadPDF;
 
-        // Bind Sliders
+        // Drag & drop onto the upload area
+        ['dragenter', 'dragover'].forEach(ev => els.dropZone.addEventListener(ev, e => {
+            e.preventDefault();
+            els.dropZone.classList.add('dragover');
+        }));
+        ['dragleave', 'drop'].forEach(ev => els.dropZone.addEventListener(ev, () => els.dropZone.classList.remove('dragover')));
+        els.dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file) loadFile(file);
+        });
+
+        // Bind Sliders (sync state with the inputs, which browsers may restore on reload)
         Object.keys(els.inputs).forEach(key => {
+            state.params[key] = parseInt(els.inputs[key].value, 10);
             els.inputs[key].oninput = (e) => {
-                state.params[key] = parseInt(e.target.value);
+                state.params[key] = parseInt(e.target.value, 10);
                 updateLabels();
                 triggerProcess();
             };
         });
 
-        function updateLabels() {
-            els.labels.detail.innerText = state.params.detail + '%';
-            els.labels.blur.innerText = state.params.blur;
-            els.labels.thick.innerText = state.params.thick === 0 ? "Fine" : `Level ${state.params.thick}`;
-        }
+        // Bind PDF options
+        document.querySelectorAll('input[name="paper"]').forEach(r => { r.checked = r.value === state.paper; });
+        document.querySelectorAll('input[name="orientation"]').forEach(r => { r.checked = r.value === state.orientation; });
+        document.querySelectorAll('input[name="orientation"], input[name="paper"]').forEach(r => {
+            r.onchange = () => {
+                if (!r.checked) return;
+                if (r.name === 'paper') { state.paper = r.value; store.set('paper', r.value); }
+                else state.orientation = r.value;
+            };
+        });
+
+        applyLanguage();
 
         function handleFile(e) {
-            if (!e.target.files[0]) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const i = new Image();
-                i.onload = () => {
-                    state.src = i;
-                    els.upload.classList.add('hidden');
-                    els.app.classList.remove('hidden');
-                    
-                    if(state.logoImg) els.overlayLogo.classList.remove('hidden');
+            const file = e.target.files[0];
+            if (file) loadFile(file);
+        }
 
-                    triggerProcess();
-                };
-                i.src = ev.target.result;
+        function loadFile(file) {
+            const url = URL.createObjectURL(file);
+            const i = new Image();
+            i.onload = () => {
+                state.src = i;
+                els.upload.classList.add('hidden');
+                els.app.classList.remove('hidden');
+                if (state.logoImg) els.overlayLogo.classList.remove('hidden');
+                triggerProcess();
             };
-            reader.readAsDataURL(e.target.files[0]);
+            i.onerror = () => {
+                URL.revokeObjectURL(url);
+                els.fileIn.value = '';
+                els.camIn.value = '';
+                alert(t('errImage'));
+            };
+            i.src = url;
         }
 
         function resetApp() {
+            if (state.src) URL.revokeObjectURL(state.src.src);
             state.src = null;
             els.upload.classList.remove('hidden');
             els.app.classList.add('hidden');
             els.overlayLogo.classList.add('hidden');
             els.fileIn.value = '';
+            els.camIn.value = '';
         }
 
         let debounceTimer;
@@ -332,246 +918,285 @@
             if (!state.src) return;
             els.loading.classList.remove('hidden');
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(processImage, 50);
-        }
-
-        // --- CORE PROCESSING ENGINE ---
-        function processImage() {
-            const ctx = els.canvas.getContext('2d');
-            const img = state.src;
-            
-            const MAX = 1200;
-            let w = img.width;
-            let h = img.height;
-            if (w > h && w > MAX) { h *= MAX/w; w = MAX; }
-            else if (h > MAX) { w *= MAX/h; h = MAX; }
-            
-            els.canvas.width = w;
-            els.canvas.height = h;
-            ctx.drawImage(img, 0, 0, w, h);
-
-            let imageData = ctx.getImageData(0, 0, w, h);
-            let data = imageData.data;
-
-            // 1. Grayscale
-            for (let i = 0; i < data.length; i += 4) {
-                const avg = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
-                data[i] = data[i+1] = data[i+2] = avg;
-            }
-
-            // 2. Box Blur
-            if (state.params.blur > 0) {
-                imageData = boxBlur(imageData, w, h, state.params.blur);
-                data = imageData.data;
-            }
-
-            // 3. Edge Detection
-            const copy = new Uint8ClampedArray(data);
-            const threshold = 60 - (state.params.detail * 0.5); 
-            
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = 1; x < w - 1; x++) {
-                    const idx = (y * w + x) * 4;
-                    const p = (dx, dy) => copy[((y+dy)*w + (x+dx)) * 4];
-                    const gx = -p(-1,-1) + p(1,-1) - 2*p(-1,0) + 2*p(1,0) - p(-1,1) + p(1,1);
-                    const gy = -p(-1,-1) - 2*p(0,-1) - p(1,-1) + p(-1,1) + 2*p(0,1) + p(1,1);
-                    const mag = Math.sqrt(gx*gx + gy*gy);
-                    let val = mag > threshold ? 0 : 255;
-                    data[idx] = data[idx+1] = data[idx+2] = val;
-                }
-            }
-
-            // 4. Dilation
-            if (state.params.thick > 0) {
-                const binaryCopy = new Uint8ClampedArray(data);
-                const r = state.params.thick;
-                for (let y = r; y < h - r; y++) {
-                    for (let x = r; x < w - r; x++) {
-                        const idx = (y * w + x) * 4;
-                        if (binaryCopy[idx] === 0) { 
-                             for (let ky = -r; ky <= r; ky++) {
-                                for (let kx = -r; kx <= r; kx++) {
-                                    if (kx===0 && ky===0) continue;
-                                    const nIdx = ((y+ky)*w + (x+kx)) * 4;
-                                    data[nIdx] = data[nIdx+1] = data[nIdx+2] = 0;
-                                }
-                             }
-                        }
-                    }
-                }
-            }
-
-            ctx.putImageData(imageData, 0, 0);
-            els.img.src = els.canvas.toDataURL('image/png');
-            els.loading.classList.add('hidden');
-        }
-
-        function boxBlur(imageData, w, h, r) {
-            const data = imageData.data;
-            const copy = new Uint8ClampedArray(data);
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    let sum = 0, count = 0;
-                    for (let ky = -1; ky <= 1; ky++) {
-                        for (let kx = -1; kx <= 1; kx++) {
-                            const ny = y + ky; const nx = x + kx;
-                            if (ny >= 0 && ny < h && nx >= 0 && nx < w) {
-                                sum += copy[(ny * w + nx) * 4];
-                                count++;
-                            }
-                        }
-                    }
-                    const idx = (y * w + x) * 4;
-                    const avg = sum / count;
-                    data[idx] = data[idx+1] = data[idx+2] = avg;
-                }
-            }
-            return imageData;
-        }
-
-        // --- PDF LOGIC ---
-        function setOrientation(mode, el) {
-            state.orientation = mode;
-            document.querySelectorAll('.radio-option').forEach(e => e.classList.remove('selected'));
-            el.classList.add('selected');
-        }
-
-        async function downloadPDF() {
-            if (!state.src) return;
-            els.loading.classList.remove('hidden');
-            
-            setTimeout(() => {
+            // Give the spinner a chance to paint before the synchronous work starts.
+            debounceTimer = setTimeout(() => {
                 try {
-                    // 1. CALCULATE LAYOUT
-                    const imgW = els.canvas.width;
-                    const imgH = els.canvas.height;
-                    
-                    let isLandscape = false;
-                    if (state.orientation === 'auto') isLandscape = imgW > imgH;
-                    else if (state.orientation === 'landscape') isLandscape = true;
-
-                    const pageW = isLandscape ? 792 : 612; 
-                    const pageH = isLandscape ? 612 : 792;
-                    const margin = 36;
-                    const maxW = pageW - (margin * 2);
-                    const maxH = pageH - (margin * 2);
-                    
-                    const ratio = imgW / imgH;
-                    let finalW = maxW;
-                    let finalH = maxW / ratio;
-                    if (finalH > maxH) {
-                        finalH = maxH;
-                        finalW = maxH * ratio;
-                    }
-                    
-                    // 2. CREATE COMPOSITE CANVAS
-                    const tc = document.createElement('canvas');
-                    tc.width = imgW;
-                    tc.height = imgH;
-                    const ctx = tc.getContext('2d');
-                    
-                    // Draw Line Art
-                    ctx.drawImage(els.canvas, 0, 0);
-
-                    // Draw Logo (if loaded)
-                    if (state.logoImg) {
-                        const scaleFactor = imgW / finalW; 
-                        const logoPixelSize = 72 * scaleFactor; // 1 inch in pixels
-                        const padding = 18 * scaleFactor; 
-
-                        try {
-                            ctx.drawImage(
-                                state.logoImg, 
-                                imgW - logoPixelSize - padding,
-                                imgH - logoPixelSize - padding,
-                                logoPixelSize,
-                                logoPixelSize
-                            );
-                        } catch (e) {
-                            console.warn("Logo drawing failed (likely CORS). Skipping logo.");
-                        }
-                    }
-
-                    // 3. GENERATE PDF
-                    let imgData;
-                    try {
-                        imgData = tc.toDataURL('image/jpeg', 0.85);
-                    } catch (e) {
-                        // If Tainted Canvas error (local security policy), fallback to original canvas without logo
-                        alert("Browser Security Notice: Cannot include logo when running from local file system. Generating PDF without logo.");
-                        imgData = els.canvas.toDataURL('image/jpeg', 0.85);
-                    }
-                    
-                    const x = (pageW - finalW) / 2;
-                    const y = (pageH - finalH) / 2;
-
-                    const pdfBlob = generatePDF(imgData, pageW, pageH, x, y, finalW, finalH, imgW, imgH);
-                    
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(pdfBlob);
-                    link.download = "coloring-page.pdf";
-                    link.click();
-                    
+                    processImage();
                 } catch (err) {
                     console.error(err);
-                    alert("An error occurred generating the PDF. Check console for details.");
-                } finally {
                     els.loading.classList.add('hidden');
+                    alert(t('errProcess'));
                 }
             }, 50);
         }
 
-        function generatePDF(jpegDataUrl, pageW, pageH, x, y, drawW, drawH, pixW, pixH) {
-            const raw = atob(jpegDataUrl.split(',')[1]);
-            const streamLength = raw.length;
-            const array = new Uint8Array(new ArrayBuffer(streamLength));
-            for(let i = 0; i < streamLength; i++) { array[i] = raw.charCodeAt(i); }
+        // --- CORE PROCESSING ENGINE ---
+        function processImage() {
+            const ctx = els.canvas.getContext('2d', { willReadFrequently: true });
+            const img = state.src;
 
-            const objects = [];
-            let offset = 0;
-            const xref = [];
+            const MAX = 1200;
+            let w = img.naturalWidth;
+            let h = img.naturalHeight;
+            const scale = Math.min(1, MAX / Math.max(w, h));
+            w = Math.max(1, Math.round(w * scale));
+            h = Math.max(1, Math.round(h * scale));
 
-            function addObj(content) {
-                xref.push(offset);
-                const objStr = `${xref.length} 0 obj\n${content}\nendobj\n`;
-                offset += objStr.length;
-                objects.push(objStr);
-                return xref.length;
+            els.canvas.width = w;
+            els.canvas.height = h;
+            // White backdrop so transparent images don't turn black.
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+
+            const imageData = ctx.getImageData(0, 0, w, h);
+            const data = imageData.data;
+            const n = w * h;
+
+            // 1. Grayscale
+            let gray = new Float32Array(n);
+            for (let p = 0, i = 0; p < n; p++, i += 4) {
+                gray[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
             }
 
-            const header = "%PDF-1.4\n";
-            offset += header.length;
+            // 2. Smoothing: repeated 3x3 box blur (one pass per slider step, approximates a Gaussian)
+            if (state.params.blur > 0) {
+                let tmp = new Float32Array(n);
+                for (let pass = 0; pass < state.params.blur; pass++) {
+                    boxBlur3(gray, tmp, w, h);
+                }
+            }
 
-            addObj(`<< /Type /Catalog /Pages 2 0 R >>`);
-            addObj(`<< /Type /Pages /Kids [3 0 R] /Count 1 >>`);
+            // 3. Edge Detection (Sobel)
+            const ink = new Uint8Array(n); // 1 = black line
+            const threshold = 60 - (state.params.detail * 0.5);
+            const t2 = threshold * threshold;
+            for (let y = 1; y < h - 1; y++) {
+                const row = y * w;
+                for (let x = 1; x < w - 1; x++) {
+                    const p = row + x;
+                    const tl = gray[p - w - 1], tc = gray[p - w], tr = gray[p - w + 1];
+                    const ml = gray[p - 1], mr = gray[p + 1];
+                    const bl = gray[p + w - 1], bc = gray[p + w], br = gray[p + w + 1];
+                    const gx = -tl + tr - 2 * ml + 2 * mr - bl + br;
+                    const gy = -tl - 2 * tc - tr + bl + 2 * bc + br;
+                    if (gx * gx + gy * gy > t2) ink[p] = 1;
+                }
+            }
+
+            // 4. Dilation (round brush)
+            let out = ink;
+            const r = state.params.thick;
+            if (r > 0) {
+                out = new Uint8Array(n);
+                const offsets = [];
+                for (let ky = -r; ky <= r; ky++) {
+                    for (let kx = -r; kx <= r; kx++) {
+                        if (kx * kx + ky * ky <= r * r + r) offsets.push(kx, ky);
+                    }
+                }
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        if (!ink[y * w + x]) continue;
+                        for (let k = 0; k < offsets.length; k += 2) {
+                            const nx = x + offsets[k], ny = y + offsets[k + 1];
+                            if (nx >= 0 && nx < w && ny >= 0 && ny < h) out[ny * w + nx] = 1;
+                        }
+                    }
+                }
+            }
+
+            for (let p = 0, i = 0; p < n; p++, i += 4) {
+                const v = out[p] ? 0 : 255;
+                data[i] = data[i + 1] = data[i + 2] = v;
+                data[i + 3] = 255;
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            els.canvas.toBlob(blob => {
+                if (!blob) return;
+                if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+                state.previewUrl = URL.createObjectURL(blob);
+                els.img.src = state.previewUrl;
+                els.loading.classList.add('hidden');
+            }, 'image/png');
+        }
+
+        // In-place 3x3 box blur using separable passes; `tmp` is scratch space of the same size.
+        function boxBlur3(src, tmp, w, h) {
+            for (let y = 0; y < h; y++) {
+                const row = y * w;
+                for (let x = 0; x < w; x++) {
+                    const p = row + x;
+                    const l = x > 0 ? src[p - 1] : src[p];
+                    const rr = x < w - 1 ? src[p + 1] : src[p];
+                    tmp[p] = (l + src[p] + rr) / 3;
+                }
+            }
+            for (let y = 0; y < h; y++) {
+                const row = y * w;
+                for (let x = 0; x < w; x++) {
+                    const p = row + x;
+                    const u = y > 0 ? tmp[p - w] : tmp[p];
+                    const d = y < h - 1 ? tmp[p + w] : tmp[p];
+                    src[p] = (u + tmp[p] + d) / 3;
+                }
+            }
+        }
+
+        // --- PDF LOGIC ---
+        async function downloadPDF() {
+            if (!state.src || els.pdfBtn.disabled) return;
+            els.loading.classList.remove('hidden');
+            els.pdfBtn.disabled = true;
+            await new Promise(res => setTimeout(res, 50));
+
+            try {
+                // 1. CALCULATE LAYOUT
+                const imgW = els.canvas.width;
+                const imgH = els.canvas.height;
+
+                let isLandscape = false;
+                if (state.orientation === 'auto') isLandscape = imgW > imgH;
+                else if (state.orientation === 'landscape') isLandscape = true;
+
+                const [shortSide, longSide] = PAPER[state.paper] || PAPER.letter;
+                const pageW = isLandscape ? longSide : shortSide;
+                const pageH = isLandscape ? shortSide : longSide;
+                const margin = 36;
+                const maxW = pageW - (margin * 2);
+                const maxH = pageH - (margin * 2);
+
+                const ratio = imgW / imgH;
+                let finalW = maxW;
+                let finalH = maxW / ratio;
+                if (finalH > maxH) {
+                    finalH = maxH;
+                    finalW = maxH * ratio;
+                }
+
+                // 2. CREATE COMPOSITE CANVAS
+                const tc = document.createElement('canvas');
+                tc.width = imgW;
+                tc.height = imgH;
+                const ctx = tc.getContext('2d');
+                ctx.drawImage(els.canvas, 0, 0);
+
+                if (state.logoImg) {
+                    const scaleFactor = imgW / finalW;
+                    const logoPixelSize = 72 * scaleFactor; // 1 inch
+                    const padding = 18 * scaleFactor;       // 1/4 inch
+                    ctx.drawImage(state.logoImg, imgW - logoPixelSize - padding, imgH - logoPixelSize - padding, logoPixelSize, logoPixelSize);
+                }
+
+                // 3. ENCODE IMAGE
+                let image;
+                try {
+                    image = await encodeImage(tc);
+                } catch (e) {
+                    if (e && e.name === 'SecurityError') {
+                        // Tainted canvas (e.g. opened via file://): fall back to the page without the logo.
+                        alert(t('logoNotice'));
+                        image = await encodeImage(els.canvas);
+                    } else {
+                        throw e;
+                    }
+                }
+
+                // 4. BUILD PDF
+                const x = (pageW - finalW) / 2;
+                const y = (pageH - finalH) / 2;
+                const pdfBlob = buildPDF({ pageW, pageH, x, y, drawW: finalW, drawH: finalH, image, title: t('title') });
+
+                const url = URL.createObjectURL(pdfBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${t('fileName')}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            } catch (err) {
+                console.error(err);
+                alert(t('errPdf'));
+            } finally {
+                els.loading.classList.add('hidden');
+                els.pdfBtn.disabled = false;
+            }
+        }
+
+        // Returns { bytes, width, height, filter, colorSpace }.
+        // Uses lossless Flate (crisp lines) when CompressionStream exists, otherwise JPEG.
+        async function encodeImage(canvas) {
+            const width = canvas.width, height = canvas.height;
+            const ctx = canvas.getContext('2d');
+            if (typeof CompressionStream === 'function') {
+                const rgba = ctx.getImageData(0, 0, width, height).data; // throws SecurityError if tainted
+                const rgb = new Uint8Array(width * height * 3);
+                for (let i = 0, j = 0; i < rgba.length; i += 4, j += 3) {
+                    rgb[j] = rgba[i]; rgb[j + 1] = rgba[i + 1]; rgb[j + 2] = rgba[i + 2];
+                }
+                const stream = new Blob([rgb]).stream().pipeThrough(new CompressionStream('deflate'));
+                const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+                return { bytes, width, height, filter: 'FlateDecode' };
+            }
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92); // throws SecurityError if tainted
+            const raw = atob(dataUrl.split(',')[1]);
+            const bytes = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+            return { bytes, width, height, filter: 'DCTDecode' };
+        }
+
+        // Minimal single-page PDF with one full-color image.
+        function buildPDF({ pageW, pageH, x, y, drawW, drawH, image, title }) {
+            const enc = new TextEncoder();
+            const parts = [];
+            const offsets = [];
+            let pos = 0;
+            const push = (chunk) => {
+                const bytes = typeof chunk === 'string' ? enc.encode(chunk) : chunk;
+                parts.push(bytes);
+                pos += bytes.length;
+            };
+            const obj = (num, dict, stream) => {
+                offsets[num] = pos;
+                push(`${num} 0 obj\n${dict}\n`);
+                if (stream) {
+                    push('stream\n');
+                    push(stream);
+                    push('\nendstream\n');
+                }
+                push('endobj\n');
+            };
+            // PDF text string as UTF-16BE hex so any language's title is valid.
+            const pdfText = (s) => {
+                let hex = 'FEFF';
+                for (let i = 0; i < s.length; i++) hex += s.charCodeAt(i).toString(16).padStart(4, '0');
+                return `<${hex.toUpperCase()}>`;
+            };
+            const f = (v) => +v.toFixed(2);
+
+            push('%PDF-1.4\n');
+            push(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A])); // binary marker comment
 
             const pdfY = pageH - y - drawH;
-            const contentStream = `q ${drawW.toFixed(2)} 0 0 ${drawH.toFixed(2)} ${x.toFixed(2)} ${pdfY.toFixed(2)} cm /Img1 Do Q`;
-            
-            addObj(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Img1 4 0 R >> >> /Contents 5 0 R >>`);
+            const content = enc.encode(`q ${f(drawW)} 0 0 ${f(drawH)} ${f(x)} ${f(pdfY)} cm /Img1 Do Q`);
 
-            xref.push(offset);
-            const imgHeader = `4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pixW} /Height ${pixH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${streamLength} >>\nstream\n`;
-            offset += imgHeader.length;
-            objects.push(imgHeader);
-            
-            const imgFooter = "\nendstream\nendobj\n";
-            offset += streamLength + imgFooter.length;
-            
-            addObj(`<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream`);
+            obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+            obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+            obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${f(pageW)} ${f(pageH)}] /Resources << /XObject << /Img1 4 0 R >> >> /Contents 5 0 R >>`);
+            obj(4, `<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /${image.filter} /Length ${image.bytes.length} >>`, image.bytes);
+            obj(5, `<< /Length ${content.length} >>`, content);
+            obj(6, `<< /Title ${pdfText(title)} /Producer (Coloring Page Maker) >>`);
 
-            const xrefOffset = offset;
-            let footer = `xref\n0 ${xref.length + 1}\n0000000000 65535 f \n`;
-            xref.forEach(o => {
-                footer += o.toString().padStart(10, '0') + " 00000 n \n";
-            });
-            footer += `trailer\n<< /Size ${xref.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+            const count = offsets.length; // includes object 0
+            const xrefPos = pos;
+            let xref = `xref\n0 ${count}\n0000000000 65535 f \n`;
+            for (let i = 1; i < count; i++) xref += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+            xref += `trailer\n<< /Size ${count} /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`;
+            push(xref);
 
-            return new Blob([
-                header, objects[0], objects[1], objects[2], 
-                imgHeader, array, imgFooter, 
-                objects[3], footer
-            ], { type: 'application/pdf' });
+            return new Blob(parts, { type: 'application/pdf' });
         }
     </script>
 </body>
